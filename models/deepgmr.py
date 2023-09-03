@@ -7,7 +7,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .. ops import transform_functions as transform
+from ops import transform_functions as transform
 
 
 def gmm_params(gamma, pts):

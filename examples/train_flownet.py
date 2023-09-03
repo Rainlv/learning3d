@@ -11,13 +11,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
-from learning3d.models import FlowNet3D
-from learning3d.data_utils import SceneflowDataset
+
 import numpy as np
 from torch.utils.data import DataLoader
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
+from import_utils import fix_import_path
 
+fix_import_path()
+from models import FlowNet3D
+from data_utils import SceneflowDataset
 class IOStream:
     def __init__(self, path):
         self.f = open(path, 'a')

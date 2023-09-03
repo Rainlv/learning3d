@@ -7,19 +7,16 @@ import numpy
 import numpy as np
 import torch
 import torch.utils.data
-import torchvision
 from torch.utils.data import DataLoader
-from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
 # Only if the files are in example folder.
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-if BASE_DIR[-8:] == 'examples':
-	sys.path.append(os.path.join(BASE_DIR, os.pardir))
-	os.chdir(os.path.join(BASE_DIR, os.pardir))
+from import_utils import fix_import_path
+
+fix_import_path()
 	
-from learning3d.models import PRNet
-from learning3d.data_utils import RegistrationData, ModelNet40Data
+from models import PRNet
+from data_utils import RegistrationData, ModelNet40Data
 
 def get_transformations(igt):
 	R_ba = igt[:, 0:3, 0:3]                             # Ps = R_ba * Pt

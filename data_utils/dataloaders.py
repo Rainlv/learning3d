@@ -13,7 +13,7 @@ import subprocess
 import shlex
 import json
 import glob
-from ..ops import transform_functions, se3
+from ops import transform_functions, se3
 from sklearn.neighbors import NearestNeighbors
 from scipy.spatial.distance import minkowski
 from scipy.spatial import cKDTree
@@ -268,20 +268,20 @@ class RegistrationData(Dataset):
         self.use_rri = False
 
         if self.algorithm == 'PCRNet' or self.algorithm == 'iPCRNet':
-            from ..ops.transform_functions import PCRNetTransform
+            from ops.transform_functions import PCRNetTransform
             self.transforms = PCRNetTransform(len(data_class), angle_range=45, translation_range=1)
         if self.algorithm == 'PointNetLK':
-            from ..ops.transform_functions import PNLKTransform
+            from ops.transform_functions import PNLKTransform
             self.transforms = PNLKTransform(0.8, True)
         if self.algorithm == 'RPMNet':
-            from ..ops.transform_functions import RPMNetTransform
+            from ops.transform_functions import RPMNetTransform
             self.transforms = RPMNetTransform(0.8, True)
         if self.algorithm == 'DCP' or self.algorithm == 'PRNet':
-            from ..ops.transform_functions import DCPTransform
+            from ops.transform_functions import DCPTransform
             self.transforms = DCPTransform(angle_range=45, translation_range=1)
         if self.algorithm == 'DeepGMR':
             self.get_rri = get_rri_cuda if torch.cuda.is_available() else get_rri
-            from ..ops.transform_functions import DeepGMRTransform
+            from ops.transform_functions import DeepGMRTransform
             self.transforms = DeepGMRTransform(angle_range=90, translation_range=1)
             if 'nearest_neighbors' in self.additional_params.keys() and self.additional_params['nearest_neighbors'] > 0:
                 self.use_rri = True

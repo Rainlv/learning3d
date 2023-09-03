@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .. utils import sample_and_group_multi
+from utils import sample_and_group_multi
 
 _raw_features_sizes = {'xyz': 3, 'dxyz': 3, 'ppf': 4}
 _raw_features_order = {'xyz': 0, 'dxyz': 1, 'ppf': 2}

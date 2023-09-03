@@ -13,14 +13,13 @@ from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
 # Only if the files are in example folder.
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-if BASE_DIR[-8:] == 'examples':
-	sys.path.append(os.path.join(BASE_DIR, os.pardir))
-	os.chdir(os.path.join(BASE_DIR, os.pardir))
+from import_utils import fix_import_path
+
+fix_import_path()
 	
-from learning3d.models import create_pointconv
-from learning3d.models import Classifier
-from learning3d.data_utils import ClassificationData, ModelNet40Data
+from models import create_pointconv
+from models import Classifier
+from data_utils import ClassificationData, ModelNet40Data
 
 def display_open3d(template):
 	template_ = o3d.geometry.PointCloud()

@@ -5,8 +5,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .. utils import square_distance, angle_difference
-from .. ops.transform_functions import convert2transformation
+from utils import square_distance, angle_difference
+from ops.transform_functions import convert2transformation
 from .ppfnet import PPFNet
 _EPS = 1e-5  # To prevent division by zero
 

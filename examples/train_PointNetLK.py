@@ -12,15 +12,14 @@ from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
 # Only if the files are in example folder.
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-if BASE_DIR[-8:] == 'examples':
-	sys.path.append(os.path.join(BASE_DIR, os.pardir))
-	os.chdir(os.path.join(BASE_DIR, os.pardir))
+from import_utils import fix_import_path
+
+fix_import_path()
 	
-from learning3d.models import PointNet
-from learning3d.models import PointNetLK
-from learning3d.losses import FrobeniusNormLoss, RMSEFeaturesLoss
-from learning3d.data_utils import RegistrationData, ModelNet40Data
+from models import PointNet
+from models import PointNetLK
+from losses import FrobeniusNormLoss, RMSEFeaturesLoss
+from data_utils import RegistrationData, ModelNet40Data
 
 def _init_(args):
 	if not os.path.exists('checkpoints'):

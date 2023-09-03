@@ -5,7 +5,7 @@ from time import time
 import numpy as np
 
 try:
-    from .. utils import pointnet2_utils as pointutils
+    from  utils import pointnet2_utils as pointutils
 except:
     print("Error in pointnet2_utils! Retry setup for pointnet2_utils.")
 

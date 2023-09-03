@@ -9,17 +9,15 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 # Only if the files are in example folder.
-from pathlib import Path
+from import_utils import fix_import_path
 
-if Path(__file__).resolve().parent.name == 'examples':
-    sys.path.append(Path(__file__).resolve().parent.parent.parent.as_posix())
-    sys.path.append(Path(__file__).resolve().parent.parent.as_posix())
-    os.chdir(Path(__file__).resolve().parent.parent.parent.as_posix())
+fix_import_path()
 
-from learning3d.models import PointNet, PointNetLK
-from learning3d.losses import FrobeniusNormLoss, RMSEFeaturesLoss
-from learning3d.data_utils import RegistrationData, ModelNet40Data, PcdData
-from learning3d.data_utils.random_utils import setup_seed
+from models import PointNet, PointNetLK
+from losses import FrobeniusNormLoss, RMSEFeaturesLoss
+from data_utils import RegistrationData, ModelNet40Data, PcdData
+from data_utils.random_utils import setup_seed
+
 
 def display_open3d(template, source, transformed_source):
     template_ = o3d.geometry.PointCloud()

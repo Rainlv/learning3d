@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .. utils import PointConvDensitySetAbstraction
+from utils import PointConvDensitySetAbstraction
 
 class PointConvDensityClsSsg(torch.nn.Module):
 	def __init__(self, emb_dims=1024, input_shape="bnc", input_channel_dim=3, classifier=False, num_classes=40, pretrained=None):
