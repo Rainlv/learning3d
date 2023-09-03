@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
 
 def pairwise_distances(a: torch.Tensor, b: torch.Tensor, p=2):
     """
@@ -18,6 +18,7 @@ def pairwise_distances(a: torch.Tensor, b: torch.Tensor, p=2):
         raise ValueError("Invalid shape for a. Must be [m, n, d] but got", b.shape)
     return (a.unsqueeze(2) - b.unsqueeze(1)).abs().pow(p).sum(3)
 
+
 def chamfer(a, b):
     """
     Compute the chamfer distance between two sets of vectors, a, and b
@@ -32,20 +33,20 @@ def chamfer(a, b):
 
 
 def chamfer_distance(template: torch.Tensor, source: torch.Tensor):
-	try:
-		from .cuda.chamfer_distance import ChamferDistance
-		cost_p0_p1, cost_p1_p0 = ChamferDistance()(template, source)
-		cost_p0_p1 = torch.mean(torch.sqrt(cost_p0_p1))
-		cost_p1_p0 = torch.mean(torch.sqrt(cost_p1_p0))
-		chamfer_loss = (cost_p0_p1 + cost_p1_p0)/2.0
-	except:
-		chamfer_loss = chamfer(template, source)
-	return chamfer_loss
+    try:
+        from .cuda.chamfer_distance import ChamferDistance
+        cost_p0_p1, cost_p1_p0 = ChamferDistance()(template, source)
+        cost_p0_p1 = torch.mean(torch.sqrt(cost_p0_p1))
+        cost_p1_p0 = torch.mean(torch.sqrt(cost_p1_p0))
+        chamfer_loss = (cost_p0_p1 + cost_p1_p0) / 2.0
+    except:
+        chamfer_loss = chamfer(template, source)
+    return chamfer_loss
 
 
 class ChamferDistanceLoss(nn.Module):
-	def __init__(self):
-		super(ChamferDistanceLoss, self).__init__()
+    def __init__(self):
+        super(ChamferDistanceLoss, self).__init__()
 
-	def forward(self, template, source):
-		return chamfer_distance(template, source)
+    def forward(self, template, source):
+        return chamfer_distance(template, source)

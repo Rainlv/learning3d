@@ -1,20 +1,18 @@
-from .pointnet import PointNet
-from .pointconv import create_pointconv
-from .dgcnn import DGCNN
-from .ppfnet import PPFNet
-from .pooling import Pooling
-
 from .classifier import Classifier
-from .segmentation import Segmentation
-
 from .dcp import DCP
-from .prnet import PRNet
-from .pcrnet import iPCRNet
-from .pointnetlk import PointNetLK
-from .rpmnet import RPMNet
-from .pcn import PCN
 from .deepgmr import DeepGMR
+from .dgcnn import DGCNN
 from .masknet import MaskNet
+from .pcn import PCN
+from .pcrnet import iPCRNet
+from .pointconv import create_pointconv
+from .pointnet import PointNet
+from .pointnetlk import PointNetLK
+from .pooling import Pooling
+from .ppfnet import PPFNet
+from .prnet import PRNet
+from .rpmnet import RPMNet
+from .segmentation import Segmentation
 
 try:
     from .flownet3d import FlowNet3D

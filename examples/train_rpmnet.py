@@ -133,7 +133,7 @@ def train(args, model, train_loader, test_loader, boardio, textio, checkpoint):
         boardio.add_scalar('Best Test Loss', best_test_loss, epoch + 1)
 
         textio.cprint('EPOCH:: %d, Traininig Loss: %f, Testing Loss: %f, Best Loss: %f' % (
-        epoch + 1, train_loss, test_loss, best_test_loss))
+            epoch + 1, train_loss, test_loss, best_test_loss))
 
 
 def options():

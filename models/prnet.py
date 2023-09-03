@@ -2,15 +2,9 @@
 # -*- coding: utf-8 -*-
 
 
-import os
-import sys
-import glob
-import h5py
-import copy
 import math
-import json
+
 import numpy as np
-from tqdm import tqdm
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -18,15 +12,13 @@ import torch.nn.functional as F
 from ops import transform_functions as transform
 from utils import Transformer, Identity
 
-from sklearn.metrics import r2_score
-
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 
 def pairwise_distance(src, tgt):
     inner = -2 * torch.matmul(src.transpose(2, 1).contiguous(), tgt)
-    xx = torch.sum(src**2, dim=1, keepdim=True)
-    yy = torch.sum(tgt**2, dim=1, keepdim=True)
+    xx = torch.sum(src ** 2, dim=1, keepdim=True)
+    yy = torch.sum(tgt ** 2, dim=1, keepdim=True)
     distances = xx.transpose(2, 1).contiguous() + inner + yy
     return torch.sqrt(distances)
 
@@ -54,7 +46,8 @@ def get_graph_feature(x, k=20):
 
     _, num_dims, _ = x.size()
 
-    x = x.transpose(2, 1).contiguous()  # (batch_size, num_points, num_dims)  -> (batch_size*num_points, num_dims) #   batch_size * num_points * k + range(0, batch_size*num_points)
+    x = x.transpose(2,
+                    1).contiguous()  # (batch_size, num_points, num_dims)  -> (batch_size*num_points, num_dims) #   batch_size * num_points * k + range(0, batch_size*num_points)
     feature = x.view(batch_size * num_points, -1)[idx, :]
     feature = feature.view(batch_size, num_points, k, num_dims)
     x = x.view(batch_size, num_points, 1, num_dims).repeat(1, 1, k, 1)
@@ -97,9 +90,9 @@ class DGCNN(nn.Module):
     def __init__(self, emb_dims=512):
         super(DGCNN, self).__init__()
         self.conv1 = nn.Conv2d(6, 64, kernel_size=1, bias=False)
-        self.conv2 = nn.Conv2d(64*2, 64, kernel_size=1, bias=False)
-        self.conv3 = nn.Conv2d(64*2, 128, kernel_size=1, bias=False)
-        self.conv4 = nn.Conv2d(128*2, 256, kernel_size=1, bias=False)
+        self.conv2 = nn.Conv2d(64 * 2, 64, kernel_size=1, bias=False)
+        self.conv3 = nn.Conv2d(64 * 2, 128, kernel_size=1, bias=False)
+        self.conv4 = nn.Conv2d(128 * 2, 256, kernel_size=1, bias=False)
         self.conv5 = nn.Conv2d(512, emb_dims, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(64)
         self.bn2 = nn.BatchNorm2d(64)
@@ -112,7 +105,7 @@ class DGCNN(nn.Module):
         x = get_graph_feature(x)
         x = F.leaky_relu(self.bn1(self.conv1(x)), negative_slope=0.2)
         x1 = x.max(dim=-1, keepdim=True)[0]
- 
+
         x = get_graph_feature(x1)
         x = F.leaky_relu(self.bn2(self.conv2(x)), negative_slope=0.2)
         x2 = x.max(dim=-1, keepdim=True)[0]
@@ -136,17 +129,17 @@ class MLPHead(nn.Module):
         super(MLPHead, self).__init__()
         n_emb_dims = emb_dims
         self.n_emb_dims = n_emb_dims
-        self.nn = nn.Sequential(nn.Linear(n_emb_dims*2, n_emb_dims//2),
-                                nn.BatchNorm1d(n_emb_dims//2),
+        self.nn = nn.Sequential(nn.Linear(n_emb_dims * 2, n_emb_dims // 2),
+                                nn.BatchNorm1d(n_emb_dims // 2),
                                 nn.ReLU(),
-                                nn.Linear(n_emb_dims//2, n_emb_dims//4),
-                                nn.BatchNorm1d(n_emb_dims//4),
+                                nn.Linear(n_emb_dims // 2, n_emb_dims // 4),
+                                nn.BatchNorm1d(n_emb_dims // 4),
                                 nn.ReLU(),
-                                nn.Linear(n_emb_dims//4, n_emb_dims//8),
-                                nn.BatchNorm1d(n_emb_dims//8),
+                                nn.Linear(n_emb_dims // 4, n_emb_dims // 8),
+                                nn.BatchNorm1d(n_emb_dims // 8),
                                 nn.ReLU())
-        self.proj_rot = nn.Linear(n_emb_dims//8, 4)
-        self.proj_trans = nn.Linear(n_emb_dims//8, 3)
+        self.proj_rot = nn.Linear(n_emb_dims // 8, 4)
+        self.proj_trans = nn.Linear(n_emb_dims // 8, 3)
 
     def forward(self, *input):
         src_embedding = input[0]
@@ -182,11 +175,11 @@ class TemperatureNet(nn.Module):
         tgt_embedding = input[1]
         src_embedding = src_embedding.mean(dim=2)
         tgt_embedding = tgt_embedding.mean(dim=2)
-        residual = torch.abs(src_embedding-tgt_embedding)
+        residual = torch.abs(src_embedding - tgt_embedding)
 
         self.feature_disparity = residual
 
-        return torch.clamp(self.nn(residual), 1.0/self.temp_factor, 1.0*self.temp_factor), residual
+        return torch.clamp(self.nn(residual), 1.0 / self.temp_factor, 1.0 * self.temp_factor), residual
 
 
 class SVDHead(nn.Module):
@@ -196,7 +189,7 @@ class SVDHead(nn.Module):
         self.cat_sampler = cat_sampler
         self.reflect = nn.Parameter(torch.eye(3), requires_grad=False)
         self.reflect[2, 2] = -1
-        self.temperature = nn.Parameter(torch.ones(1)*0.5, requires_grad=True)
+        self.temperature = nn.Parameter(torch.ones(1) * 0.5, requires_grad=True)
         self.my_iter = torch.ones(1)
 
     def forward(self, *input):
@@ -210,11 +203,11 @@ class SVDHead(nn.Module):
         if self.cat_sampler == 'softmax':
             d_k = src_embedding.size(1)
             scores = torch.matmul(src_embedding.transpose(2, 1).contiguous(), tgt_embedding) / math.sqrt(d_k)
-            scores = torch.softmax(temperature*scores, dim=2)
+            scores = torch.softmax(temperature * scores, dim=2)
         elif self.cat_sampler == 'gumbel_softmax':
             d_k = src_embedding.size(1)
             scores = torch.matmul(src_embedding.transpose(2, 1).contiguous(), tgt_embedding) / math.sqrt(d_k)
-            scores = scores.view(batch_size*num_points, num_points)
+            scores = scores.view(batch_size * num_points, num_points)
             temperature = temperature.repeat(1, num_points, 1).view(-1, 1)
             scores = F.gumbel_softmax(scores, tau=temperature, hard=True)
             scores = scores.view(batch_size, num_points, num_points)
@@ -271,14 +264,16 @@ class KeyPointNet(nn.Module):
 
         src_keypoints = torch.gather(src, dim=2, index=src_keypoints_idx)
         tgt_keypoints = torch.gather(tgt, dim=2, index=tgt_keypoints_idx)
-        
+
         src_embedding = torch.gather(src_embedding, dim=2, index=src_embedding_idx)
         tgt_embedding = torch.gather(tgt_embedding, dim=2, index=tgt_embedding_idx)
         return src_keypoints, tgt_keypoints, src_embedding, tgt_embedding
 
 
 class PRNet(nn.Module):
-    def __init__(self, emb_nn='dgcnn', attention='transformer', head='svd', emb_dims=512, num_keypoints=512, num_subsampled_points=768, num_iters=3, cycle_consistency_loss=0.1, feature_alignment_loss=0.1, discount_factor = 0.9, input_shape='bnc'):
+    def __init__(self, emb_nn='dgcnn', attention='transformer', head='svd', emb_dims=512, num_keypoints=512,
+                 num_subsampled_points=768, num_iters=3, cycle_consistency_loss=0.1, feature_alignment_loss=0.1,
+                 discount_factor=0.9, input_shape='bnc'):
         super(PRNet, self).__init__()
         self.emb_dims = emb_dims
         self.num_keypoints = num_keypoints
@@ -288,7 +283,7 @@ class PRNet(nn.Module):
         self.feature_alignment_loss = feature_alignment_loss
         self.cycle_consistency_loss = cycle_consistency_loss
         self.input_shape = input_shape
-        
+
         if emb_nn == 'pointnet':
             self.emb_nn = PointNet(emb_dims=self.emb_dims)
         elif emb_nn == 'dgcnn':
@@ -333,7 +328,7 @@ class PRNet(nn.Module):
         temperature, feature_disparity = self.temp_net(src_embedding, tgt_embedding)
 
         return src, tgt, src_embedding, tgt_embedding, temperature, feature_disparity
-    
+
     # Single Pass Alignment Module for PRNet
     def spam(self, *input):
         src, tgt, src_embedding, tgt_embedding, temperature, feature_disparity = self.predict_embedding(*input)
@@ -346,7 +341,7 @@ class PRNet(nn.Module):
         batch_size, num_dims, num_points = src.size()
         d_k = src_embedding.size(1)
         scores = torch.matmul(src_embedding.transpose(2, 1).contiguous(), tgt_embedding) / math.sqrt(d_k)
-        scores = scores.view(batch_size*num_points, num_points)
+        scores = scores.view(batch_size * num_points, num_points)
         temperature = temperature.repeat(1, num_points, 1).view(-1, 1)
         scores = F.gumbel_softmax(scores, tau=temperature, hard=True)
         scores = scores.view(batch_size, num_points, num_points)
@@ -357,7 +352,8 @@ class PRNet(nn.Module):
         if len(input) == 2:
             src, tgt = input[0], input[1]
         elif len(input) == 3:
-            src, tgt, rotation_ab, translation_ab = input[0], input[1], input[2][:, :3, :3], input[2][:, :3, 3].view(-1, 3)
+            src, tgt, rotation_ab, translation_ab = input[0], input[1], input[2][:, :3, :3], input[2][:, :3, 3].view(-1,
+                                                                                                                     3)
             calculate_loss = True
         elif len(input) == 4:
             src, tgt, rotation_ab, translation_ab = input[0], input[1], input[2], input[3]
@@ -381,36 +377,40 @@ class PRNet(nn.Module):
         total_scale_consensus_loss = 0
 
         for i in range(self.num_iters):
-            rotation_ab_pred_i, translation_ab_pred_i, rotation_ba_pred_i, translation_ba_pred_i, feature_disparity = self.spam(src, tgt)
+            rotation_ab_pred_i, translation_ab_pred_i, rotation_ba_pred_i, translation_ba_pred_i, feature_disparity = self.spam(
+                src, tgt)
 
             rotation_ab_pred = torch.matmul(rotation_ab_pred_i, rotation_ab_pred)
-            translation_ab_pred = torch.matmul(rotation_ab_pred_i, translation_ab_pred.unsqueeze(2)).squeeze(2) + translation_ab_pred_i
+            translation_ab_pred = torch.matmul(rotation_ab_pred_i, translation_ab_pred.unsqueeze(2)).squeeze(
+                2) + translation_ab_pred_i
 
             rotation_ba_pred = torch.matmul(rotation_ba_pred_i, rotation_ba_pred)
-            translation_ba_pred = torch.matmul(rotation_ba_pred_i, translation_ba_pred.unsqueeze(2)).squeeze(2) + translation_ba_pred_i
+            translation_ba_pred = torch.matmul(rotation_ba_pred_i, translation_ba_pred.unsqueeze(2)).squeeze(
+                2) + translation_ba_pred_i
 
             if calculate_loss:
                 loss = (F.mse_loss(torch.matmul(rotation_ab_pred.transpose(2, 1), rotation_ab), identity) \
-                       + F.mse_loss(translation_ab_pred, translation_ab)) * self.discount_factor**i
-            
-                feature_alignment_loss = feature_disparity.mean() * self.feature_alignment_loss * self.discount_factor**i
+                        + F.mse_loss(translation_ab_pred, translation_ab)) * self.discount_factor ** i
+
+                feature_alignment_loss = feature_disparity.mean() * self.feature_alignment_loss * self.discount_factor ** i
                 cycle_consistency_loss = cycle_consistency(rotation_ab_pred_i, translation_ab_pred_i,
                                                            rotation_ba_pred_i, translation_ba_pred_i) \
-                                         * self.cycle_consistency_loss * self.discount_factor**i
+                                         * self.cycle_consistency_loss * self.discount_factor ** i
 
                 scale_consensus_loss = 0
                 total_feature_alignment_loss += feature_alignment_loss
                 total_cycle_consistency_loss += cycle_consistency_loss
                 total_loss = total_loss + loss + feature_alignment_loss + cycle_consistency_loss + scale_consensus_loss
-            
+
             if self.input_shape == 'bnc':
-                src = transform.transform_point_cloud(src.permute(0, 2, 1), rotation_ab_pred_i, translation_ab_pred_i).permute(0, 2, 1)
+                src = transform.transform_point_cloud(src.permute(0, 2, 1), rotation_ab_pred_i,
+                                                      translation_ab_pred_i).permute(0, 2, 1)
             else:
                 src = transform.transform_point_cloud(src, rotation_ab_pred_i, translation_ab_pred_i)
 
         if self.input_shape == 'bnc':
             src, tgt = src.permute(0, 2, 1), tgt.permute(0, 2, 1)
-            
+
         result = {'est_R': rotation_ab_pred,
                   'est_t': translation_ab_pred,
                   'est_T': transform.convert2transformation(rotation_ab_pred, translation_ab_pred),

@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 
 
-import open3d as o3d
-import os
 import argparse
-import torch
+import os
 
 import numpy as np
+import open3d as o3d
+import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+
 from import_utils import fix_import_path
 
 fix_import_path()

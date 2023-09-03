@@ -1,9 +1,9 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
-from . import quaternion  # works with (w, x, y, z) quaternions
+import torch
+import torch.nn.functional as F
 from scipy.spatial.transform import Rotation
+
+from . import quaternion  # works with (w, x, y, z) quaternions
 from . import se3
 
 
@@ -13,13 +13,14 @@ def quat2mat(quat):
     B = quat.size(0)
 
     w2, x2, y2, z2 = w.pow(2), x.pow(2), y.pow(2), z.pow(2)
-    wx, wy, wz = w*x, w*y, w*z
-    xy, xz, yz = x*y, x*z, y*z
+    wx, wy, wz = w * x, w * y, w * z
+    xy, xz, yz = x * y, x * z, y * z
 
-    rotMat = torch.stack([w2 + x2 - y2 - z2, 2*xy - 2*wz, 2*wy + 2*xz,
-                          2*wz + 2*xy, w2 - x2 + y2 - z2, 2*yz - 2*wx,
-                          2*xz - 2*wy, 2*wx + 2*yz, w2 - x2 - y2 + z2], dim=1).reshape(B, 3, 3)
+    rotMat = torch.stack([w2 + x2 - y2 - z2, 2 * xy - 2 * wz, 2 * wy + 2 * xz,
+                          2 * wz + 2 * xy, w2 - x2 + y2 - z2, 2 * yz - 2 * wx,
+                          2 * xz - 2 * wy, 2 * wx + 2 * yz, w2 - x2 - y2 + z2], dim=1).reshape(B, 3, 3)
     return rotMat
+
 
 def transform_point_cloud(point_cloud: torch.Tensor, rotation: torch.Tensor, translation: torch.Tensor):
     if len(rotation.size()) == 2:
@@ -28,11 +29,13 @@ def transform_point_cloud(point_cloud: torch.Tensor, rotation: torch.Tensor, tra
         rot_mat = rotation
     return (torch.matmul(rot_mat, point_cloud.permute(0, 2, 1)) + translation.unsqueeze(2)).permute(0, 2, 1)
 
+
 def convert2transformation(rotation_matrix: torch.Tensor, translation_vector: torch.Tensor):
-    one_ = torch.tensor([[[0.0, 0.0, 0.0, 1.0]]]).repeat(rotation_matrix.shape[0], 1, 1).to(rotation_matrix)    # (Bx1x4)
-    transformation_matrix = torch.cat([rotation_matrix, translation_vector.unsqueeze(-1)], dim=2)                        # (Bx3x4)
-    transformation_matrix = torch.cat([transformation_matrix, one_], dim=1)                                     # (Bx4x4)
+    one_ = torch.tensor([[[0.0, 0.0, 0.0, 1.0]]]).repeat(rotation_matrix.shape[0], 1, 1).to(rotation_matrix)  # (Bx1x4)
+    transformation_matrix = torch.cat([rotation_matrix, translation_vector.unsqueeze(-1)], dim=2)  # (Bx3x4)
+    transformation_matrix = torch.cat([transformation_matrix, one_], dim=1)  # (Bx4x4)
     return transformation_matrix
+
 
 def qmul(q, r):
     """
@@ -54,10 +57,12 @@ def qmul(q, r):
     z = terms[:, 0, 3] - terms[:, 1, 2] + terms[:, 2, 1] + terms[:, 3, 0]
     return torch.stack((w, x, y, z), dim=1).view(original_shape)
 
+
 def qmul_np(q, r):
     q = torch.from_numpy(q).contiguous()
     r = torch.from_numpy(r).contiguous()
     return qmul(q, r).numpy()
+
 
 def euler_to_quaternion(e, order):
     """
@@ -108,6 +113,7 @@ def euler_to_quaternion(e, order):
 
 class PNLKTransform:
     """ rigid motion """
+
     def __init__(self, mag=1, mag_randomly=False):
         self.mag = mag
         self.randomly = mag_randomly
@@ -124,17 +130,17 @@ class PNLKTransform:
         x = torch.randn(1, 6)
         x = x / x.norm(p=2, dim=1, keepdim=True) * amp
 
-        return x # [1, 6]
+        return x  # [1, 6]
 
     def apply_transform(self, p0, x):
         # p0: [N, 3]
         # x: [1, 6]
-        g = se3.exp(x).to(p0)   # [1, 4, 4]
-        gt = se3.exp(-x).to(p0) # [1, 4, 4]
+        g = se3.exp(x).to(p0)  # [1, 4, 4]
+        gt = se3.exp(-x).to(p0)  # [1, 4, 4]
 
         p1 = se3.transform(g, p0)
-        self.gt = gt.squeeze(0) #  gt: p1 -> p0
-        self.igt = g.squeeze(0) # igt: p0 -> p1
+        self.gt = gt.squeeze(0)  # gt: p1 -> p0
+        self.igt = g.squeeze(0)  # igt: p0 -> p1
         return p1
 
     def transform(self, tensor):
@@ -147,6 +153,7 @@ class PNLKTransform:
 
 class RPMNetTransform:
     """ rigid motion """
+
     def __init__(self, mag=1, mag_randomly=False):
         self.mag = mag
         self.randomly = mag_randomly
@@ -163,13 +170,13 @@ class RPMNetTransform:
         x = torch.randn(1, 6)
         x = x / x.norm(p=2, dim=1, keepdim=True) * amp
 
-        return x # [1, 6]
+        return x  # [1, 6]
 
     def apply_transform(self, p0, x):
         # p0: [N, 3]
         # x: [1, 6]
-        g = se3.exp(x).to(p0)   # [1, 4, 4]
-        gt = se3.exp(-x).to(p0) # [1, 4, 4]
+        g = se3.exp(x).to(p0)  # [1, 4, 4]
+        gt = se3.exp(-x).to(p0)  # [1, 4, 4]
 
         p1 = se3.transform(g, p0[:, :3])
 
@@ -179,8 +186,8 @@ class RPMNetTransform:
             n1 = se3.transform(g_n, p0[:, 3:6])
             p1 = torch.cat([p1, n1], axis=-1)
 
-        self.gt = gt.squeeze(0) #  gt: p1 -> p0
-        self.igt = g.squeeze(0) # igt: p0 -> p1
+        self.gt = gt.squeeze(0)  # gt: p1 -> p0
+        self.igt = g.squeeze(0)  # igt: p0 -> p1
         return p1
 
     def transform(self, tensor):
@@ -196,7 +203,8 @@ class PCRNetTransform:
         self.angle_range = angle_range
         self.translation_range = translation_range
         self.dtype = torch.float32
-        self.transformations = [self.create_random_transform(torch.float32, self.angle_range, self.translation_range) for _ in range(data_size)]
+        self.transformations = [self.create_random_transform(torch.float32, self.angle_range, self.translation_range)
+                                for _ in range(data_size)]
         self.index = 0
 
     @staticmethod
@@ -251,14 +259,18 @@ class PCRNetTransform:
 
     @staticmethod
     def quaternion_transform(point_cloud: torch.Tensor, pose_7d: torch.Tensor):
-        transformed_point_cloud = PCRNetTransform.quaternion_rotate(point_cloud, pose_7d) + PCRNetTransform.get_translation(pose_7d).view(-1, 1, 3).repeat(1, point_cloud.shape[1], 1)      # Ps' = R*Ps + t
+        transformed_point_cloud = PCRNetTransform.quaternion_rotate(point_cloud,
+                                                                    pose_7d) + PCRNetTransform.get_translation(
+            pose_7d).view(-1, 1, 3).repeat(1, point_cloud.shape[1], 1)  # Ps' = R*Ps + t
         return transformed_point_cloud
 
     @staticmethod
     def convert2transformation(rotation_matrix: torch.Tensor, translation_vector: torch.Tensor):
-        one_ = torch.tensor([[[0.0, 0.0, 0.0, 1.0]]]).repeat(rotation_matrix.shape[0], 1, 1).to(rotation_matrix)    # (Bx1x4)
-        transformation_matrix = torch.cat([rotation_matrix, translation_vector[:,0,:].unsqueeze(-1)], dim=2)                        # (Bx3x4)
-        transformation_matrix = torch.cat([transformation_matrix, one_], dim=1)                                     # (Bx4x4)
+        one_ = torch.tensor([[[0.0, 0.0, 0.0, 1.0]]]).repeat(rotation_matrix.shape[0], 1, 1).to(
+            rotation_matrix)  # (Bx1x4)
+        transformation_matrix = torch.cat([rotation_matrix, translation_vector[:, 0, :].unsqueeze(-1)],
+                                          dim=2)  # (Bx3x4)
+        transformation_matrix = torch.cat([transformation_matrix, one_], dim=1)  # (Bx4x4)
         return transformation_matrix
 
     def __call__(self, template):
@@ -270,7 +282,7 @@ class PCRNetTransform:
 
 class DCPTransform:
     def __init__(self, angle_range=45, translation_range=1):
-        self.angle_range = angle_range*(np.pi/180)
+        self.angle_range = angle_range * (np.pi / 180)
         self.translation_range = translation_range
         self.index = 0
 
@@ -279,8 +291,8 @@ class DCPTransform:
         self.angley = np.random.uniform() * self.angle_range
         self.anglez = np.random.uniform() * self.angle_range
         self.translation = np.array([np.random.uniform(-self.translation_range, self.translation_range),
-                                        np.random.uniform(-self.translation_range, self.translation_range),
-                                        np.random.uniform(-self.translation_range, self.translation_range)])
+                                     np.random.uniform(-self.translation_range, self.translation_range),
+                                     np.random.uniform(-self.translation_range, self.translation_range)])
         # cosx = np.cos(self.anglex)
         # cosy = np.cos(self.angley)
         # cosz = np.cos(self.anglez)
@@ -304,7 +316,7 @@ class DCPTransform:
     def apply_transformation(self, template):
         rotation = Rotation.from_euler('zyx', [self.anglez, self.angley, self.anglex])
         self.igt = rotation.apply(np.eye(3))
-        self.igt = np.concatenate([self.igt, self.translation.reshape(-1,1)], axis=1)
+        self.igt = np.concatenate([self.igt, self.translation.reshape(-1, 1)], axis=1)
         self.igt = torch.from_numpy(np.concatenate([self.igt, np.array([[0., 0., 0., 1.]])], axis=0)).float()
         source = rotation.apply(template) + np.expand_dims(self.translation, axis=0)
         return source
@@ -314,9 +326,10 @@ class DCPTransform:
         self.generate_transform()
         return torch.from_numpy(self.apply_transformation(template)).float()
 
+
 class DeepGMRTransform:
     def __init__(self, angle_range=45, translation_range=1):
-        self.angle_range = angle_range*(np.pi/180)
+        self.angle_range = angle_range * (np.pi / 180)
         self.translation_range = translation_range
         self.index = 0
 
@@ -325,13 +338,13 @@ class DeepGMRTransform:
         self.angley = np.random.uniform() * self.angle_range
         self.anglez = np.random.uniform() * self.angle_range
         self.translation = np.array([np.random.uniform(-self.translation_range, self.translation_range),
-                                        np.random.uniform(-self.translation_range, self.translation_range),
-                                        np.random.uniform(-self.translation_range, self.translation_range)])
-        
+                                     np.random.uniform(-self.translation_range, self.translation_range),
+                                     np.random.uniform(-self.translation_range, self.translation_range)])
+
     def apply_transformation(self, template):
         rotation = Rotation.from_euler('zyx', [self.anglez, self.angley, self.anglex])
         self.igt = rotation.apply(np.eye(3))
-        self.igt = np.concatenate([self.igt, self.translation.reshape(-1,1)], axis=1)
+        self.igt = np.concatenate([self.igt, self.translation.reshape(-1, 1)], axis=1)
         self.igt = torch.from_numpy(np.concatenate([self.igt, np.array([[0., 0., 0., 1.]])], axis=0)).float()
         source = rotation.apply(template) + np.expand_dims(self.translation, axis=0)
         return source

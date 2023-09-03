@@ -1,8 +1,8 @@
-import open3d as o3d
 import argparse
 import os
-import sys
+
 import numpy as np
+import open3d as o3d
 import torch
 import torch.utils.data
 from torch.utils.data import DataLoader
@@ -15,7 +15,7 @@ fix_import_path()
 
 from models import PointNet, PointNetLK
 from losses import FrobeniusNormLoss, RMSEFeaturesLoss
-from data_utils import RegistrationData, ModelNet40Data, PcdData
+from data_utils import RegistrationData, PcdData
 from data_utils.random_utils import setup_seed
 
 

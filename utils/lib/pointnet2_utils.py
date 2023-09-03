@@ -1,10 +1,10 @@
-import torch
-from torch.autograd import Variable
-from torch.autograd import Function
-import torch.nn as nn
 from typing import Tuple
 
 import pointnet2_cuda as pointnet2
+import torch
+import torch.nn as nn
+from torch.autograd import Function
+from torch.autograd import Variable
 
 
 class FurthestPointSampling(Function):
@@ -72,6 +72,7 @@ class GatherOperation(Function):
 
 gather_operation = GatherOperation.apply
 
+
 class KNN(Function):
 
     @staticmethod
@@ -99,7 +100,10 @@ class KNN(Function):
     @staticmethod
     def backward(ctx, a=None, b=None):
         return None, None, None
+
+
 knn = KNN.apply
+
 
 class ThreeNN(Function):
 

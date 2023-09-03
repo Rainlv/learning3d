@@ -1,5 +1,6 @@
-import torch.nn as nn
 from typing import List, Tuple
+
+import torch.nn as nn
 
 
 class SharedMLP(nn.Sequential):
@@ -233,4 +234,3 @@ class FC(nn.Sequential):
 
             if activation is not None:
                 self.add_module(name + 'activation', activation)
-

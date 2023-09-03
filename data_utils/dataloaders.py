@@ -1,23 +1,15 @@
-from pathlib import Path
-from typing import Union
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
-import numpy as np
-import os
-import h5py
-import subprocess
-import shlex
-import json
 import glob
-from ops import transform_functions, se3
-from sklearn.neighbors import NearestNeighbors
-from scipy.spatial.distance import minkowski
+import os
+
+import h5py
+import numpy as np
+import torch
 from scipy.spatial import cKDTree
+from scipy.spatial.distance import minkowski
+from sklearn.neighbors import NearestNeighbors
 from torch.utils.data import Dataset
+
+from ops import transform_functions
 
 
 def download_modelnet40():

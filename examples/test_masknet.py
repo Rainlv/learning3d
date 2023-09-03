@@ -1,22 +1,16 @@
-import open3d as o3d
 import argparse
 import os
-import sys
-import logging
-import numpy
+
 import numpy as np
+import open3d as o3d
 import torch
 import torch.utils.data
-import torchvision
 from torch.utils.data import DataLoader
-from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
-# Only if the files are in example folder.
-from models import FlowNet3D
-from data_utils import SceneflowDataset
-from models import MaskNet
 from data_utils import RegistrationData, ModelNet40Data
+# Only if the files are in example folder.
+from models import MaskNet
 
 
 def pc2open3d(data):

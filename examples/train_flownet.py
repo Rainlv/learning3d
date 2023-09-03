@@ -3,24 +3,27 @@
 
 
 from __future__ import print_function
-import os
-import gc
+
 import argparse
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.optim.lr_scheduler import MultiStepLR
+import gc
+import os
 
 import numpy as np
-from torch.utils.data import DataLoader
+import torch
+import torch.nn as nn
+import torch.optim as optim
 from tensorboardX import SummaryWriter
+from torch.optim.lr_scheduler import MultiStepLR
+from torch.utils.data import DataLoader
 from tqdm import tqdm
+
 from import_utils import fix_import_path
 
 fix_import_path()
 from models import FlowNet3D
 from data_utils import SceneflowDataset
+
+
 class IOStream:
     def __init__(self, path):
         self.f = open(path, 'a')
@@ -42,12 +45,14 @@ def _init_(args):
     if not os.path.exists('checkpoints/' + args.exp_name + '/' + 'models'):
         os.makedirs('checkpoints/' + args.exp_name + '/' + 'models')
 
+
 def weights_init(m):
-    classname=m.__class__.__name__
+    classname = m.__class__.__name__
     if classname.find('Conv2d') != -1:
         nn.init.kaiming_normal_(m.weight.data)
     if classname.find('Conv1d') != -1:
         nn.init.kaiming_normal_(m.weight.data)
+
 
 def test_one_epoch(args, net, test_loader):
     net.eval()
@@ -56,23 +61,22 @@ def test_one_epoch(args, net, test_loader):
     num_examples = 0
     for i, data in tqdm(enumerate(test_loader), total=len(test_loader), smoothing=0.9):
         pc1, pc2, color1, color2, flow, mask1 = data
-        pc1 = pc1.cuda().transpose(2,1).contiguous()
-        pc2 = pc2.cuda().transpose(2,1).contiguous()
-        color1 = color1.cuda().transpose(2,1).contiguous()
-        color2 = color2.cuda().transpose(2,1).contiguous()
+        pc1 = pc1.cuda().transpose(2, 1).contiguous()
+        pc2 = pc2.cuda().transpose(2, 1).contiguous()
+        color1 = color1.cuda().transpose(2, 1).contiguous()
+        color2 = color2.cuda().transpose(2, 1).contiguous()
         flow = flow.cuda()
         mask1 = mask1.cuda().float()
 
         batch_size = pc1.size(0)
         num_examples += batch_size
-        flow_pred = net(pc1, pc2, color1, color2).permute(0,2,1)
+        flow_pred = net(pc1, pc2, color1, color2).permute(0, 2, 1)
         loss_1 = torch.mean(mask1 * torch.sum((flow_pred - flow) * (flow_pred - flow), -1) / 2.0)
 
-        pc1, pc2 = pc1.permute(0,2,1), pc2.permute(0,2,1)
+        pc1, pc2 = pc1.permute(0, 2, 1), pc2.permute(0, 2, 1)
         pc1_ = pc1 + flow_pred
 
         total_loss += loss_1.item() * batch_size
-        
 
     return total_loss * 1.0 / num_examples
 
@@ -83,11 +87,11 @@ def train_one_epoch(args, net, train_loader, opt):
     total_loss = 0
     for i, data in tqdm(enumerate(train_loader), total=len(train_loader), smoothing=0.9):
         pc1, pc2, color1, color2, flow, mask1 = data
-        pc1 = pc1.cuda().transpose(2,1).contiguous()
-        pc2 = pc2.cuda().transpose(2,1).contiguous()
-        color1 = color1.cuda().transpose(2,1).contiguous()
-        color2 = color2.cuda().transpose(2,1).contiguous()
-        flow = flow.cuda().transpose(2,1).contiguous()
+        pc1 = pc1.cuda().transpose(2, 1).contiguous()
+        pc2 = pc2.cuda().transpose(2, 1).contiguous()
+        color1 = color1.cuda().transpose(2, 1).contiguous()
+        color2 = color2.cuda().transpose(2, 1).contiguous()
+        flow = flow.cuda().transpose(2, 1).contiguous()
         mask1 = mask1.cuda().float()
 
         batch_size = pc1.size(0)
@@ -96,7 +100,7 @@ def train_one_epoch(args, net, train_loader, opt):
         flow_pred = net(pc1, pc2, color1, color2)
         loss_1 = torch.mean(mask1 * torch.sum((flow_pred - flow) ** 2, 1) / 2.0)
 
-        pc1, pc2, flow_pred = pc1.permute(0,2,1), pc2.permute(0,2,1), flow_pred.permute(0,2,1)
+        pc1, pc2, flow_pred = pc1.permute(0, 2, 1), pc2.permute(0, 2, 1), flow_pred.permute(0, 2, 1)
         pc1_ = pc1 + flow_pred
 
         loss_1.backward()
@@ -111,11 +115,10 @@ def train_one_epoch(args, net, train_loader, opt):
 
 
 def test(args, net, test_loader, boardio, textio):
-
     test_loss = test_one_epoch(args, net, test_loader)
 
     textio.cprint('==FINAL TEST==')
-    textio.cprint('mean test loss: %f'%test_loss)
+    textio.cprint('mean test loss: %f' % test_loss)
 
 
 def train(args, net, train_loader, test_loader, boardio, textio):
@@ -130,25 +133,25 @@ def train(args, net, train_loader, test_loader, boardio, textio):
     best_test_loss = np.inf
     for epoch in range(args.epochs):
         scheduler.step()
-        textio.cprint('==epoch: %d=='%epoch)
+        textio.cprint('==epoch: %d==' % epoch)
         train_loss = train_one_epoch(args, net, train_loader, opt)
-        textio.cprint('mean train EPE loss: %f'%train_loss)
+        textio.cprint('mean train EPE loss: %f' % train_loss)
 
         test_loss = test_one_epoch(args, net, test_loader)
-        textio.cprint('mean test EPE loss: %f'%test_loss)
+        textio.cprint('mean test EPE loss: %f' % test_loss)
 
         if best_test_loss >= test_loss:
             best_test_loss = test_loss
-            textio.cprint('best test loss till now: %f'%test_loss)
+            textio.cprint('best test loss till now: %f' % test_loss)
             if torch.cuda.device_count() > 1:
                 torch.save(net.module.state_dict(), 'checkpoints/%s/models/model.best.t7' % args.exp_name)
             else:
                 torch.save(net.state_dict(), 'checkpoints/%s/models/model.best.t7' % args.exp_name)
 
-        boardio.add_scalar('Train Loss', train_loss, epoch+1)
-        boardio.add_scalar('Test Loss', test_loss, epoch+1)
-        boardio.add_scalar('Best Test Loss', best_test_loss, epoch+1)
-        
+        boardio.add_scalar('Train Loss', train_loss, epoch + 1)
+        boardio.add_scalar('Test Loss', test_loss, epoch + 1)
+        boardio.add_scalar('Best Test Loss', best_test_loss, epoch + 1)
+
         if torch.cuda.device_count() > 1:
             torch.save(net.module.state_dict(), 'checkpoints/%s/models/model.%d.t7' % (args.exp_name, epoch))
         else:
@@ -252,7 +255,6 @@ def main():
         test(args, net, test_loader, boardio, textio)
     else:
         train(args, net, train_loader, test_loader, boardio, textio)
-
 
     print('FINISH')
     # boardio.close()

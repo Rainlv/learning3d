@@ -1,6 +1,8 @@
+import math
+
 import torch
 import torch.nn as nn
-import math
+
 
 class SVDHead(nn.Module):
     def __init__(self, emb_dims, input_shape="bnc"):

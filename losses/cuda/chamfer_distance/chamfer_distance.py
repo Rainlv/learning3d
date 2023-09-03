@@ -1,6 +1,7 @@
+import os
+
 import torch
 from torch.utils.cpp_extension import load
-import os
 
 script_dir = os.path.dirname(__file__)
 sources = [

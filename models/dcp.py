@@ -1,58 +1,58 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from .dgcnn import DGCNN
-from .pointnet import PointNet
+
 from ops import transform_functions as transform
 from utils import Transformer, SVDHead, Identity
+from .dgcnn import DGCNN
+from .pointnet import PointNet
 
 
 class DCP(nn.Module):
-	def __init__(self, feature_model=DGCNN(), cycle=False, pointer_='transformer', head='svd'):
-		super(DCP, self).__init__()
-		self.cycle = cycle
-		self.emb_nn = feature_model
+    def __init__(self, feature_model=DGCNN(), cycle=False, pointer_='transformer', head='svd'):
+        super(DCP, self).__init__()
+        self.cycle = cycle
+        self.emb_nn = feature_model
 
-		if pointer_ == 'identity':
-			self.pointer = Identity()
-		elif pointer_ == 'transformer':
-			self.pointer = Transformer(self.emb_nn.emb_dims, n_blocks=1, dropout=0.0, ff_dims=1024, n_heads=4)
-		else:
-			raise Exception("Not implemented")
+        if pointer_ == 'identity':
+            self.pointer = Identity()
+        elif pointer_ == 'transformer':
+            self.pointer = Transformer(self.emb_nn.emb_dims, n_blocks=1, dropout=0.0, ff_dims=1024, n_heads=4)
+        else:
+            raise Exception("Not implemented")
 
-		if head == 'mlp':
-			self.head = MLPHead(self.emb_nn.emb_dims)
-		elif head == 'svd':
-			self.head = SVDHead(self.emb_nn.emb_dims)
-		else:
-			raise Exception('Not implemented')
+        if head == 'mlp':
+            self.head = MLPHead(self.emb_nn.emb_dims)
+        elif head == 'svd':
+            self.head = SVDHead(self.emb_nn.emb_dims)
+        else:
+            raise Exception('Not implemented')
 
-	def forward(self, template, source):
-		source_features = self.emb_nn(source)
-		template_features = self.emb_nn(template)
+    def forward(self, template, source):
+        source_features = self.emb_nn(source)
+        template_features = self.emb_nn(template)
 
-		source_features_p, template_features_p = self.pointer(source_features, template_features)
+        source_features_p, template_features_p = self.pointer(source_features, template_features)
 
-		source_features = source_features + source_features_p
-		template_features = template_features + template_features_p
+        source_features = source_features + source_features_p
+        template_features = template_features + template_features_p
 
-		rotation_ab, translation_ab = self.head(source_features, template_features, source, template)
-		if self.cycle:
-			rotation_ba, translation_ba = self.head(template_features, source_features, template, source)
-		else:
-			rotation_ba = rotation_ab.transpose(2, 1).contiguous()
-			translation_ba = -torch.matmul(rotation_ba, translation_ab.unsqueeze(2)).squeeze(2)
+        rotation_ab, translation_ab = self.head(source_features, template_features, source, template)
+        if self.cycle:
+            rotation_ba, translation_ba = self.head(template_features, source_features, template, source)
+        else:
+            rotation_ba = rotation_ab.transpose(2, 1).contiguous()
+            translation_ba = -torch.matmul(rotation_ba, translation_ab.unsqueeze(2)).squeeze(2)
 
-		transformed_source = transform.transform_point_cloud(source, rotation_ab, translation_ab)
+        transformed_source = transform.transform_point_cloud(source, rotation_ab, translation_ab)
 
-		result = {'est_R': rotation_ab,
-				  'est_t': translation_ab,
-				  'est_R_': rotation_ba,
-				  'est_t_': translation_ba,
-				  'est_T': transform.convert2transformation(rotation_ab, translation_ab),
-				  'r': template_features - source_features,
-				  'transformed_source': transformed_source}
-		return result
+        result = {'est_R': rotation_ab,
+                  'est_t': translation_ab,
+                  'est_R_': rotation_ba,
+                  'est_t_': translation_ba,
+                  'est_T': transform.convert2transformation(rotation_ab, translation_ab),
+                  'r': template_features - source_features,
+                  'transformed_source': transformed_source}
+        return result
 
 
 class MLPHead(nn.Module):
@@ -83,10 +83,12 @@ class MLPHead(nn.Module):
 
 
 if __name__ == '__main__':
-	template, source = torch.rand(10,1024,3), torch.rand(10,1024,3)
-	pn = PointNet()
+    template, source = torch.rand(10, 1024, 3), torch.rand(10, 1024, 3)
+    pn = PointNet()
 
-	# Not Tested Yet.
-	net = DCP(pn)
-	result = net(template, source)
-	import ipdb; ipdb.set_trace()
+    # Not Tested Yet.
+    net = DCP(pn)
+    result = net(template, source)
+    import ipdb;
+
+    ipdb.set_trace()
