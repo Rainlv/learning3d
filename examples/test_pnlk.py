@@ -2,27 +2,24 @@ import open3d as o3d
 import argparse
 import os
 import sys
-import logging
-import numpy
 import numpy as np
 import torch
 import torch.utils.data
-import torchvision
 from torch.utils.data import DataLoader
-from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
 # Only if the files are in example folder.
 from pathlib import Path
 
-sys.path.append(Path(__file__).resolve().parent.parent.parent.as_posix())
-sys.path.append(Path(__file__).resolve().parent.parent.as_posix())
-os.chdir(Path(__file__).resolve().parent.parent.parent.as_posix())
+if Path(__file__).resolve().parent.name == 'examples':
+    sys.path.append(Path(__file__).resolve().parent.parent.parent.as_posix())
+    sys.path.append(Path(__file__).resolve().parent.parent.as_posix())
+    os.chdir(Path(__file__).resolve().parent.parent.parent.as_posix())
 
 from learning3d.models import PointNet, PointNetLK
 from learning3d.losses import FrobeniusNormLoss, RMSEFeaturesLoss
 from learning3d.data_utils import RegistrationData, ModelNet40Data, PcdData
-
+from learning3d.data_utils.random_utils import setup_seed
 
 def display_open3d(template, source, transformed_source):
     template_ = o3d.geometry.PointCloud()
@@ -50,13 +47,13 @@ def test_one_epoch(device, model, test_loader):
         igt = igt.to(device)
 
         output = model(template, source)
-
         display_open3d(template.detach().cpu().numpy()[0], source.detach().cpu().numpy()[0],
                        output['transformed_source'].detach().cpu().numpy()[0])
         loss_val = FrobeniusNormLoss()(output['est_T'], igt) + RMSEFeaturesLoss()(output['r'])
 
         test_loss += loss_val.item()
         count += 1
+        print(output['est_T'])
 
     test_loss = float(test_loss) / count
     return test_loss
@@ -103,6 +100,7 @@ def options():
 
 def main():
     args = options()
+    # usage for PcdData loader
     f1 = "/home/i/PycharmProjects/learning3d/data/pcd_data/data/ply_data_test0_0.pcd"
     f2 = "/home/i/PycharmProjects/learning3d/data/pcd_data/label/ply_data_test0_0.pcd"
     # testset = RegistrationData('PointNetLK', ModelNet40Data(train=False))
@@ -127,4 +125,6 @@ def main():
 
 
 if __name__ == '__main__':
+    seed = 42
+    setup_seed(seed)
     main()
