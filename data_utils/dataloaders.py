@@ -212,13 +212,21 @@ class PcdData(ModelNet40Data):
 
     def load_data(self, f1, f2):
         import open3d as o3d
-        data = o3d.io.read_point_cloud(str(f1))
-        label = o3d.io.read_point_cloud(str(f2))
-        data_points = np.asarray(data.points)
-        label_points = np.asarray(label.points)
-        data_points = data_points[None, :, :]
-        label_points = label_points[None, :, :]
-        return data_points, data_points
+        data_l = o3d.io.read_point_cloud(str(f1))
+        data_r = o3d.io.read_point_cloud(str(f2))
+        data_l_points = np.asarray(data_l.points, dtype=np.float32)
+        data_r_points = np.asarray(data_r.points, dtype=np.float32)
+        data_l_points = data_l_points[None, :, :]
+        data_r_points = data_r_points[None, :, :]
+        return data_l_points, data_r_points
+
+    def __getitem__(self, idx):
+        current_points = self.data[idx].copy()
+
+        current_points = torch.from_numpy(current_points[:self.num_points, :]).float()
+        label = torch.from_numpy(self.labels[idx]).float()
+
+        return current_points, label
 
 
 class ClassificationData(Dataset):
@@ -313,6 +321,18 @@ class RegistrationData(Dataset):
                 return template, source, igt, self.template_mask
         else:
             return template, source, igt
+
+
+class RegistrationPcdData(Dataset):
+    def __init__(self, data_class):
+        self.data_class = data_class
+
+    def __getitem__(self, index):
+        template, source = self.data_class[index]
+        return torch.tensor(template).float(), torch.tensor(source).float(), np.eye(4, dtype=np.float32)
+
+    def __len__(self):
+        return len(self.data_class)
 
 
 class SegmentationData(Dataset):

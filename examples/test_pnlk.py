@@ -15,7 +15,7 @@ fix_import_path()
 
 from models import PointNet, PointNetLK
 from losses import FrobeniusNormLoss, RMSEFeaturesLoss
-from data_utils import RegistrationData, ModelNet40Data
+from data_utils import RegistrationData, ModelNet40Data, RegistrationPcdData, PcdData
 from data_utils.random_utils import setup_seed
 
 
@@ -103,10 +103,14 @@ def options():
 def main():
     args = options()
     # usage for PcdData loader
-    f1 = "/home/i/PycharmProjects/learning3d/data/pcd_data/data/ply_data_test0_0.pcd"
-    f2 = "/home/i/PycharmProjects/learning3d/data/pcd_data/label/ply_data_test0_0.pcd"
-    testset = RegistrationData('PointNetLK', ModelNet40Data(train=False))
-    # testset = RegistrationData('PointNetLK', PcdData(f1, f2, train=False))
+    # testset = RegistrationData('PointNetLK', ModelNet40Data(train=False))
+
+    # f1 = "/home/i/PycharmProjects/learning3d/data/pcd_data/data/ply_data_test0_0.pcd"
+    # f2 = "/home/i/PycharmProjects/learning3d/data/pcd_data/label/ply_data_test0_0.pcd"
+    f1 = "/home/i/Downloads/1691500287.478173971_downsampled.pcd"
+    f2 = "/home/i/Downloads/1691500287.378330469_downsampled.pcd"
+    testset = RegistrationPcdData(PcdData(f1, f2, train=False))
+
     test_loader = DataLoader(testset, batch_size=8, shuffle=False, drop_last=False, num_workers=args.workers)
 
     if not torch.cuda.is_available():

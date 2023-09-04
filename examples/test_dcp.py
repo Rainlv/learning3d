@@ -14,7 +14,7 @@ from import_utils import fix_import_path
 fix_import_path()
 
 from models import DGCNN, DCP
-from data_utils import RegistrationData, ModelNet40Data
+from data_utils import RegistrationData, ModelNet40Data, PcdData, RegistrationPcdData
 
 
 def get_transformations(igt):
@@ -73,7 +73,7 @@ def test_one_epoch(device, model, test_loader):
 
 
 def test(args, model, test_loader):
-    test_loss, test_accuracy = test_one_epoch(args.device, model, test_loader)
+    test_loss = test_one_epoch(args.device, model, test_loader)
 
 
 def options():
@@ -101,7 +101,7 @@ def options():
     # settings for on training
     parser.add_argument('-j', '--workers', default=4, type=int,
                         metavar='N', help='number of data loading workers (default: 4)')
-    parser.add_argument('-b', '--batch_size', default=2, type=int,
+    parser.add_argument('-b', '--batch_size', default=1, type=int,
                         metavar='N', help='mini-batch size (default: 32)')
     parser.add_argument('--pretrained', default='learning3d/pretrained/exp_dcp/models/best_model.t7', type=str,
                         metavar='PATH', help='path to pretrained model file (default: null (no-use))')
@@ -117,7 +117,12 @@ def main():
     torch.backends.cudnn.deterministic = True
 
     trainset = RegistrationData('DCP', ModelNet40Data(train=True))
-    testset = RegistrationData('DCP', ModelNet40Data(train=False))
+    # testset = RegistrationData('DCP', ModelNet40Data(train=False))
+
+    f1 = "/home/i/Downloads/1691500287.478173971_downsampled.pcd"
+    f2 = "/home/i/Downloads/1691500287.378330469_downsampled.pcd"
+    testset = RegistrationPcdData(PcdData(f1, f2, train=False))
+
     train_loader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True, drop_last=True,
                               num_workers=args.workers)
     test_loader = DataLoader(testset, batch_size=args.batch_size, shuffle=False, drop_last=False,
