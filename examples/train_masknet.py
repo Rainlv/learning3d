@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 # Only if the files are in example folder.
-from examples.utils.import_utils import fix_import_path
+from import_utils import fix_import_path
 
 fix_import_path()
 

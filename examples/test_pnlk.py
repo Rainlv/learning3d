@@ -9,13 +9,13 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 # Only if the files are in example folder.
-from examples.utils.import_utils import fix_import_path
+from import_utils import fix_import_path
 
 fix_import_path()
 
 from models import PointNet, PointNetLK
 from losses import FrobeniusNormLoss, RMSEFeaturesLoss
-from data_utils import RegistrationData, PcdData
+from data_utils import RegistrationData, ModelNet40Data
 from data_utils.random_utils import setup_seed
 
 
@@ -50,8 +50,11 @@ def test_one_epoch(device, model, test_loader):
         loss_val = FrobeniusNormLoss()(output['est_T'], igt) + RMSEFeaturesLoss()(output['r'])
 
         test_loss += loss_val.item()
+        print('Test Loss: %f' % loss_val.item())
         count += 1
-        print(output['est_T'])
+        # print(output['est_T'][-1])
+        # print(output['est_t'][-1])
+        # print(igt[-1])
 
     test_loss = float(test_loss) / count
     return test_loss
@@ -59,6 +62,7 @@ def test_one_epoch(device, model, test_loader):
 
 def test(args, model, test_loader):
     test_loss = test_one_epoch(args.device, model, test_loader)
+    print('Epoch Loss: %f' % test_loss)
 
 
 def options():
@@ -101,8 +105,8 @@ def main():
     # usage for PcdData loader
     f1 = "/home/i/PycharmProjects/learning3d/data/pcd_data/data/ply_data_test0_0.pcd"
     f2 = "/home/i/PycharmProjects/learning3d/data/pcd_data/label/ply_data_test0_0.pcd"
-    # testset = RegistrationData('PointNetLK', ModelNet40Data(train=False))
-    testset = RegistrationData('PointNetLK', PcdData(f1, f2, train=False))
+    testset = RegistrationData('PointNetLK', ModelNet40Data(train=False))
+    # testset = RegistrationData('PointNetLK', PcdData(f1, f2, train=False))
     test_loader = DataLoader(testset, batch_size=8, shuffle=False, drop_last=False, num_workers=args.workers)
 
     if not torch.cuda.is_available():

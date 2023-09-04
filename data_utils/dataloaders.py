@@ -252,7 +252,7 @@ class RegistrationData(Dataset):
         else:
             raise Exception("Algorithm not available for registration.")
 
-        self.set_class(data_class)
+        self.data_class = data_class
         self.partial_template = partial_template
         self.partial_source = partial_source
         self.noise = noise
@@ -281,9 +281,6 @@ class RegistrationData(Dataset):
 
     def __len__(self):
         return len(self.data_class)
-
-    def set_class(self, data_class):
-        self.data_class = data_class
 
     def __getitem__(self, index):
         template, label = self.data_class[index]

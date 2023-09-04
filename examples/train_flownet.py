@@ -17,7 +17,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from examples.utils.import_utils import fix_import_path
+from import_utils import fix_import_path
 
 fix_import_path()
 from models import FlowNet3D

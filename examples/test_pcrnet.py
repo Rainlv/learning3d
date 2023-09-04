@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 # Only if the files are in example folder.
-from examples.utils.import_utils import fix_import_path
+from import_utils import fix_import_path
 
 fix_import_path()
 
@@ -49,6 +49,7 @@ def test_one_epoch(device, model, test_loader):
         loss_val = ChamferDistanceLoss()(template, output['transformed_source'])
 
         test_loss += loss_val.item()
+        print('Test Loss: %f' % loss_val.item())
         count += 1
 
     test_loss = float(test_loss) / count
@@ -56,7 +57,7 @@ def test_one_epoch(device, model, test_loader):
 
 
 def test(args, model, test_loader):
-    test_loss, test_accuracy = test_one_epoch(args.device, model, test_loader)
+    test_loss = test_one_epoch(args.device, model, test_loader)
 
 
 def options():
