@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 
 import numpy as np
@@ -7,13 +8,14 @@ import torch
 import torch.utils.data
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+import torch.nn.functional as F
 
 # Only if the files are in example folder.
 from import_utils import fix_import_path
 
 fix_import_path()
 
-from models import DeepGMR
+from models import DeepGMR, PointNet
 from data_utils import RegistrationData, ModelNet40Data
 
 
@@ -64,11 +66,13 @@ def test_one_epoch(device, model, test_loader):
         display_open3d(template.detach().cpu().numpy()[0, :, :3], source.detach().cpu().numpy()[0, :, :3],
                        output['transformed_source'].detach().cpu().numpy()[0])
 
+
         eye = torch.eye(4).expand_as(igt).to(igt.device)
         mse1 = F.mse_loss(output['est_T_inverse'] @ torch.inverse(igt), eye)
         mse2 = F.mse_loss(output['est_T'] @ igt, eye)
         loss = mse1 + mse2
 
+        est_T_inverse = output['est_T_inverse']
         r_err = rotation_error(est_T_inverse[:, :3, :3], igt[:, :3, :3])
         t_err = translation_error(est_T_inverse[:, :3, 3], igt[:, :3, 3])
         rmse_val = rmse(template[:, :100], est_T_inverse, igt)
@@ -76,7 +80,7 @@ def test_one_epoch(device, model, test_loader):
         translation_errors.append(t_err)
         rmses.append(rmse_val)
 
-        test_loss += loss_val.item()
+        test_loss += loss.item()
         count += 1
 
     test_loss = float(test_loss) / count
@@ -138,7 +142,9 @@ def main():
         args.device = 'cpu'
     args.device = torch.device(args.device)
 
-    model = DeepGMR(use_rri=args.use_rri, nearest_neighbors=args.nearest_neighbors)
+    feature_model = PointNet(input_shape='bcn')
+    model = DeepGMR(use_rri=False, nearest_neighbors=args.nearest_neighbors, feature_model=feature_model)
+    print(model)
     model = model.to(args.device)
 
     if args.pretrained:

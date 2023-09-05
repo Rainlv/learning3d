@@ -127,15 +127,16 @@ class PointNet(nn.Module):
 class DeepGMR(nn.Module):
     def __init__(self, use_rri=True, feature_model=None, nearest_neighbors=20):
         super(DeepGMR, self).__init__()
-        self.backbone = feature_model if not None else PointNet(use_rri=use_rri, nearest_neighbors=nearest_neighbors)
+        self.backbone = feature_model if feature_model else PointNet(use_rri=use_rri,
+                                                                     nearest_neighbors=nearest_neighbors)
         self.use_rri = use_rri
 
     def forward(self, template, source):
         if self.use_rri:
             self.template = template[..., :3]
             self.source = source[..., :3]
-            template_features = template[..., 3:].transpose(1, 2)
-            source_features = source[..., 3:].transpose(1, 2)
+            template_features = template[..., :3].transpose(1, 2)
+            source_features = source[..., :3].transpose(1, 2)
         else:
             self.template = template
             self.source = source
@@ -150,16 +151,15 @@ class DeepGMR(nn.Module):
         self.est_T_inverse = gmm_register(self.template_pi, self.template_mu, self.source_mu, self.source_sigma)
         self.est_T = gmm_register(self.source_pi, self.source_mu, self.template_mu,
                                   self.template_sigma)  # [template = source * est_T]
-        self.igt = igt  # [source = template * igt]
 
-        transformed_source = transform.transform_point_cloud(source, est_T[:, :3, :3], est_T[:, :3, 3])
+        transformed_source = transform.transform_point_cloud(source, self.est_T[:, :3, :3], self.est_T[:, :3, 3])
 
-        result = {'est_R': est_T[:, :3, :3],
-                  'est_t': est_T[:, :3, 3],
-                  'est_R_inverse': est_T_inverse[:, :3, :3],
-                  'est_t_inverese': est_T_inverse[:, :3, 3],
-                  'est_T': est_T,
-                  'est_T_inverse': est_T_inverse,
+        result = {'est_R': self.est_T[:, :3, :3],
+                  'est_t': self.est_T[:, :3, 3],
+                  'est_R_inverse': self.est_T_inverse[:, :3, :3],
+                  'est_t_inverese': self.est_T_inverse[:, :3, 3],
+                  'est_T': self.est_T,
+                  'est_T_inverse': self.est_T_inverse,
                   'r': template_features - source_features,
                   'transformed_source': transformed_source}
 
